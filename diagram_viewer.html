@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>AMQP 0-9-1 Diagramas de Arquitectura y Secuencia</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+  </script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 40px;
+      background: #f8fafc;
+      color: #1e293b;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      margin-bottom: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    }
+    h1 { color: #0f172a; margin-bottom: 8px; }
+    h2 { color: #2563eb; margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+    p { color: #64748b; margin-bottom: 20px; }
+    .mermaid { display: flex; justify-content: center; }
+  </style>
+</head>
+<body>
+  <h1>AMQP 0-9-1 — Diagramas para Presentación (Redes Avanzadas)</h1>
+  <p>Diagramas generados para la demo de Topic Exchange, persistencia en disco, QoS y modos de acuse de recibo.</p>
+
+  <div class="card">
+    <h2>1. Arquitectura y Topología Lógica</h2>
+    <p>Describe el cableado de red, el broker RabbitMQ, el Topic Exchange y los dos tipos de consumidores.</p>
+    <div class="mermaid">
+flowchart LR
+    subgraph Prod["💻 Productor (producer.py)"]
+        P["Cliente AMQP<br/>(Canal Lógico 1)"]
+    end
+
+    subgraph Broker["🐰 RabbitMQ Broker (Docker TCP :5672)"]
+        EX{{"Topic Exchange<br/>'industria.eventos'<br/>(durable=True)"}}
+        
+        Q_TEL[("Cola Telemetría<br/>'cola_telemetria_historica'<br/>(2 msgs Ready)")]
+        Q_CRIT[("Cola Alarmas Críticas<br/>'cola_alarmas_criticas'<br/>(1 msg Ready -> Unacked)")]
+
+        EX -->|"Binding: '#.metric'<br/>(2 mensajes)"| Q_TEL
+        EX -->|"Binding: '#.critical'<br/>(1 mensaje)"| Q_CRIT
+    end
+
+    subgraph Cons["⚙️ Consumidores"]
+        C_TEL["📊 consumer_telemetry.py<br/>Modo: auto_ack=True (no-ack: True)<br/>Alto Throughput / Sin ACKs"]
+        C_CRIT["🚨 consumer_critical.py<br/>Modo: auto_ack=False (no-ack: False)<br/>QoS Prefetch=1 / Tolerante a fallos"]
+    end
+
+    P -.->|"1. Declara Topología<br/>(Exchange, Queues, Bindings)"| EX
+    P ==>|"2. Basic.Publish (x3)<br/>[Method + Header(delivery_mode=2) + Body + 0xCE]"| EX
+
+    Q_TEL ==>|"3a. Basic.Deliver (x2 en ráfaga)<br/>(Se borran al enviar)"| C_TEL
+    Q_CRIT ==>|"3b. Basic.Deliver (x1)<br/>(Retenido en Unacked 4s)"| C_CRIT
+    C_CRIT -.->|"4. Basic.Ack (tag=1)<br/>(Recién a los 4s borra de la cola)"| Q_CRIT
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2. Diagrama de Secuencia de Red (Wire-Level)</h2>
+    <p>Detalla el flujo cronológico de paquetes exactos que se observan en Wireshark.</p>
+    <div class="mermaid">
+sequenceDiagram
+    autonumber
+    participant P as 💻 producer.py
+    participant B as 🐰 RabbitMQ Broker (:5672)
+    participant CC as 🚨 consumer_critical.py
+    participant CT as 📊 consumer_telemetry.py
+
+    Note over P,B: FASE 1: Handshake, Topología y Publicación
+    P->>B: Protocol-Header 0-9-1 + Connection.Open (Channel 0)
+    P->>B: Channel.Open (Channel 1)
+    P->>B: Exchange.Declare + Queue.Declare (x2) + Queue.Bind (x2)
+    P->>B: Basic.Publish + Content-Header (delivery_mode=2) + Content-Body [0xCE] (x3)
+    Note over B: Topic Exchange enruta:<br/>2 msgs -> cola_telemetria<br/>1 msg -> cola_alarmas
+
+    Note over B,CC: FASE 2: Consumidor Crítico (Manual ACK + QoS)
+    CC->>B: Basic.Qos (prefetch_count=1)
+    CC->>B: Basic.Consume (cola_alarmas, no-ack=False)
+    B->>CC: Basic.Deliver (delivery_tag=1) [Estado en Broker: UNACKED]
+    Note over CC: Procesando en BD (4 segundos)...
+    CC->>B: Basic.Ack (delivery_tag=1) [Broker elimina el mensaje]
+
+    Note over B,CT: FASE 3: Consumidor Telemetría (Auto ACK / Ráfaga)
+    CT->>B: Basic.Consume (cola_telemetria, no-ack=True)
+    B->>CT: Basic.Deliver (x2 en ráfaga) [Broker elimina al enviar]
+    Note over CT,B: Sin paquetes Basic.Ack (Ahorro de red)
+    </div>
+  </div>
+</body>
+</html>

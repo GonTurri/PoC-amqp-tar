@@ -11,10 +11,9 @@ def callback(ch, method, properties, body):
     print(f"    - Routing Key  : {method.routing_key}")
     print(f"    - Exchange     : {method.exchange}")
     print(f"    - Payload      : {evento}")
-    print("[*] Simulando procesamiento y escritura transaccional (espera 4s)...")
-    print("    >>> ¡PRESIONA CTRL+C AHORA SI DESEAS SIMULAR LA CAÍDA DEL NODO! <<<")
+    print("[*] Procesando en almacenamiento transaccional (4s antes de emitir Basic.Ack)...")
     
-    # Ventana de tiempo deliberada para permitir la interrupción con Ctrl+C
+    # Ventana de 4s para evidenciar en Wireshark la diferencia temporal entre Basic.Deliver y Basic.Ack
     time.sleep(4)
     
     # Confirmación explícita de procesamiento a nivel de capa de aplicación

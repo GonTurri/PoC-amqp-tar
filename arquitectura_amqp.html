@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagrama de Arquitectura System Design — AMQP 0-9-1</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --canvas-bg: #111827;
+      --card-bg: #1f2937;
+      --border: #374151;
+      --border-highlight: #4b5563;
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+      --rabbitmq-orange: #FF6600;
+      --python-blue: #387EB8;
+      --docker-blue: #2496ED;
+      --cyan: #06b6d4;
+      --red: #ef4444;
+      --green: #10b981;
+      --amber: #f59e0b;
+    }
+
+    .light-theme {
+      --bg: #f3f4f6;
+      --canvas-bg: #ffffff;
+      --card-bg: #f9fafb;
+      --border: #e5e7eb;
+      --border-highlight: #d1d5db;
+      --text: #111827;
+      --text-muted: #6b7280;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+      min-height: 100vh;
+      transition: background 0.2s;
+    }
+
+    .header-bar {
+      width: 100%;
+      max-width: 1260px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .header-bar h1 {
+      font-size: 20px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: -0.3px;
+    }
+
+    .header-bar p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: 0.15s;
+    }
+    .btn:hover { border-color: var(--rabbitmq-orange); }
+
+    /* Contenedor del Diagrama */
+    .diagram-wrapper {
+      width: 100%;
+      max-width: 1260px;
+      background: var(--canvas-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.3);
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      overflow-x: auto;
+    }
+
+    svg {
+      display: block;
+      user-select: none;
+    }
+
+    text {
+      font-family: 'Inter', -apple-system, sans-serif;
+    }
+    .font-mono {
+      font-family: 'Fira Code', monospace;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-bar">
+    <div>
+      <h1>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="#FF6600">
+          <path d="M23.035 9.601h-7.677a.956.956 0 01-.962-.962V.962a.956.956 0 00-.962-.956H10.56a.956.956 0 00-.962.956V8.64a.956.956 0 01-.962.962H5.762a.956.956 0 01-.961-.962V.962A.956.956 0 003.839 0H.959a.956.956 0 00-.956.962v22.076A.956.956 0 00.965 24h22.07a.956.956 0 00.962-.962V10.58a.956.956 0 00-.962-.98zm-3.86 8.152a1.437 1.437 0 01-1.437 1.443h-1.924a1.437 1.437 0 01-1.436-1.443v-1.917a1.437 1.437 0 011.436-1.443h1.924a1.437 1.437 0 011.437 1.443z"/>
+        </svg>
+        Diagrama de Arquitectura AMQP 0-9-1 (System Design)
+      </h1>
+      <p>Flujo completo: Aprovisionamiento Asertivo, Topic Exchange, Colas y Políticas de Consumo</p>
+    </div>
+    <div>
+      <button class="btn" onclick="toggleTheme()">🌓 Alternar Tema</button>
+    </div>
+  </div>
+
+  <div class="diagram-wrapper">
+    <svg id="system-design-svg" width="1240" height="640" viewBox="0 0 1240 640" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Marcadores de Flechas -->
+        <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#9ca3af"/>
+        </marker>
+        <marker id="arrow-orange" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#FF6600"/>
+        </marker>
+        <marker id="arrow-cyan" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#06b6d4"/>
+        </marker>
+        <marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#ef4444"/>
+        </marker>
+        <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#10b981"/>
+        </marker>
+
+        <!-- Filtro de sombra suave -->
+        <filter id="box-shadow" x="-5%" y="-5%" width="110%" height="115%">
+          <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.25"/>
+        </filter>
+      </defs>
+
+      <!-- ======================================================== -->
+      <!-- CONTENEDOR: RABBITMQ BROKER (Límite del Sistema Central) -->
+      <!-- ======================================================== -->
+      <g id="broker-subsystem">
+        <rect x="290" y="40" width="570" height="520" rx="16" fill="#1e293b" stroke="#FF6600" stroke-width="2" stroke-dasharray="8 6" opacity="0.9" filter="url(#box-shadow)"/>
+        
+        <!-- Header del Broker -->
+        <g transform="translate(315, 60)">
+          <path d="M23.035 9.601h-7.677a.956.956 0 01-.962-.962V.962a.956.956 0 00-.962-.956H10.56a.956.956 0 00-.962.956V8.64a.956.956 0 01-.962.962H5.762a.956.956 0 01-.961-.962V.962A.956.956 0 003.839 0H.959a.956.956 0 00-.956.962v22.076A.956.956 0 00.965 24h22.07a.956.956 0 00.962-.962V10.58a.956.956 0 00-.962-.98zm-3.86 8.152a1.437 1.437 0 01-1.437 1.443h-1.924a1.437 1.437 0 01-1.436-1.443v-1.917a1.437 1.437 0 011.436-1.443h1.924a1.437 1.437 0 011.437 1.443z" fill="#FF6600" transform="scale(0.9)"/>
+          <text x="30" y="16" fill="#f9fafb" font-size="15" font-weight="700">RabbitMQ Message Broker</text>
+          <text x="30" y="32" fill="#9ca3af" font-size="11" class="font-mono">Puerto IANA: TCP 5672</text>
+        </g>
+      </g>
+
+      <!-- ======================================================== -->
+      <!-- NODO: PRODUCER (Izquierda)                               -->
+      <!-- ======================================================== -->
+      <g id="node-producer" transform="translate(30, 220)">
+        <rect width="195" height="180" rx="12" fill="#1f2937" stroke="#387EB8" stroke-width="2" filter="url(#box-shadow)"/>
+        
+        <!-- Header Producer con logo Python -->
+        <g transform="translate(14, 16)">
+          <path d="M14.25.18l.9.2.73.26.59.3.45.32.34.34.25.34.16.33.1.3.04.26.02.2-.01.13V8.5l-.05.63-.13.55-.21.46-.26.38-.3.31-.33.25-.35.19-.35.14-.33.1-.3.07-.26.04-.21.02H8.77l-.69.05-.59.14-.5.22-.41.27-.33.32-.27.35-.2.36-.15.37-.1.35-.07.32-.04.27-.02.21v3.06H3.17l-.21-.03-.28-.07-.32-.12-.35-.18-.36-.26-.36-.36-.35-.46-.32-.59-.28-.73-.21-.88-.14-1.05-.05-1.23.06-1.22.16-1.04.24-.87.32-.71.36-.57.4-.44.42-.33.42-.24.4-.16.36-.1.32-.05.24-.01h.16l.06.01h8.16v-.83H6.18l-.01-2.75-.02-.37.05-.34.11-.31.17-.28.25-.26.31-.23.38-.2.44-.18.51-.15.58-.12.64-.1.71-.06.77-.04.84-.02 1.27.05zm-6.3 1.98l-.23.33-.08.41.08.41.23.34.33.22.41.09.41-.09.33-.22.23-.34.08-.41-.08-.41-.23-.33-.33-.22-.41-.09-.41.09zm13.09 3.95l.28.06.32.12.35.18.36.27.36.35.35.47.32.59.28.73.21.88.14 1.04.05 1.23-.06 1.23-.16 1.04-.24.86-.32.71-.36.57-.4.45-.42.33-.42.24-.4.16-.36.09-.32.05-.24.02-.16-.01h-8.22v.82h5.84l.01 2.76.02.36-.05.34-.11.31-.17.29-.25.25-.31.24-.38.2-.44.17-.51.15-.58.13-.64.09-.71.07-.77.04-.84.01-1.27-.04-1.07-.14-.9-.2-.73-.25-.59-.3-.45-.33-.34-.34-.25-.34-.16-.33-.1-.3-.04-.25-.02-.2.01-.13v-5.34l.05-.64.13-.54.21-.46.26-.38.3-.32.33-.24.35-.2.35-.14.33-.1.3-.06.26-.04.21-.02.13-.01h5.84l.69-.05.59-.14.5-.21.41-.28.33-.32.27-.35.2-.36.15-.36.1-.35.07-.32.04-.28.02-.21V6.07h2.09l.14.01zm-6.47 14.25l-.23.33-.08.41.08.41.23.33.33.23.41.08.41-.08.33-.23.23-.33.08-.41-.08-.41-.23-.33-.33-.23-.41-.08-.41.08z" fill="#387EB8" transform="scale(0.9)"/>
+          <text x="30" y="16" fill="#f9fafb" font-size="14" font-weight="700">Productor Industrial</text>
+          <text x="30" y="30" fill="#9ca3af" font-size="11" class="font-mono">producer.py</text>
+        </g>
+        
+        <line x1="14" y1="62" x2="181" y2="62" stroke="#374151" stroke-width="1"/>
+        
+        <text x="14" y="85" fill="#f9fafb" font-size="12" font-weight="600">Eventos Emitidos:</text>
+        <text x="14" y="105" fill="#06b6d4" font-size="10.5" class="font-mono">• linea1.prensa.metric (x2)</text>
+        <text x="14" y="123" fill="#ef4444" font-size="10.5" class="font-mono">• linea1.prensa.critical (x1)</text>
+        
+        <rect x="14" y="138" width="167" height="26" rx="4" fill="#111827" stroke="#374151"/>
+        <text x="22" y="155" fill="#9ca3af" font-size="10" class="font-mono">Props: delivery_mode=2</text>
+      </g>
+
+      <!-- ======================================================== -->
+      <!-- COMPONENTES DENTRO DE RABBITMQ                           -->
+      <!-- ======================================================== -->
+
+      <!-- Topic Exchange (Rombo) -->
+      <g id="component-exchange" transform="translate(320, 260)">
+        <polygon points="75,0 150,50 75,100 0,50" fill="#1f2937" stroke="#f59e0b" stroke-width="2" filter="url(#box-shadow)"/>
+        <text x="75" y="44" fill="#f59e0b" font-size="11.5" font-weight="800" text-anchor="middle">TOPIC EXCHANGE</text>
+        <text x="75" y="62" fill="#f9fafb" font-size="10.5" class="font-mono" text-anchor="middle">'industria.eventos'</text>
+      </g>
+
+      <!-- Cola Telemetría -->
+      <g id="component-queue-telemetry" transform="translate(635, 115)">
+        <rect width="195" height="95" rx="10" fill="#162e3d" stroke="#06b6d4" stroke-width="1.8" filter="url(#box-shadow)"/>
+        <text x="14" y="24" fill="#06b6d4" font-size="10" font-weight="700">COLA DE MENSAJES (DURABLE)</text>
+        <text x="14" y="45" fill="#f9fafb" font-size="12" font-weight="600" class="font-mono">cola_telemetria_</text>
+        <text x="14" y="61" fill="#f9fafb" font-size="12" font-weight="600" class="font-mono">historica</text>
+        
+        <rect x="14" y="70" width="80" height="18" rx="9" fill="#06b6d4" opacity="0.2"/>
+        <text x="22" y="83" fill="#06b6d4" font-size="10" font-weight="700">Ready: 2</text>
+      </g>
+
+      <!-- Cola Alarmas Críticas -->
+      <g id="component-queue-critical" transform="translate(635, 395)">
+        <rect width="195" height="95" rx="10" fill="#2d1a1f" stroke="#ef4444" stroke-width="1.8" filter="url(#box-shadow)"/>
+        <text x="14" y="24" fill="#ef4444" font-size="10" font-weight="700">COLA DE ALARMAS (DURABLE)</text>
+        <text x="14" y="45" fill="#f9fafb" font-size="12" font-weight="600" class="font-mono">cola_alarmas_</text>
+        <text x="14" y="61" fill="#f9fafb" font-size="12" font-weight="600" class="font-mono">criticas</text>
+        
+        <rect x="14" y="70" width="120" height="18" rx="9" fill="#ef4444" opacity="0.2"/>
+        <text x="22" y="83" fill="#ef4444" font-size="10" font-weight="700">Ready: 1 ➔ Unacked: 1</text>
+      </g>
+
+      <!-- ======================================================== -->
+      <!-- NODOS: CONSUMIDORES (Derecha)                            -->
+      <!-- ======================================================== -->
+
+      <!-- Consumidor Telemetría -->
+      <g id="node-consumer-telemetry" transform="translate(935, 110)">
+        <rect width="265" height="105" rx="12" fill="#1f2937" stroke="#06b6d4" stroke-width="2" filter="url(#box-shadow)"/>
+        <rect x="14" y="12" width="100" height="18" rx="4" fill="rgba(6,182,212,0.15)"/>
+        <text x="22" y="25" fill="#06b6d4" font-size="10" font-weight="700">auto_ack = True</text>
+        
+        <text x="14" y="48" fill="#f9fafb" font-size="13" font-weight="700">consumer_telemetry.py</text>
+        <text x="14" y="66" fill="#9ca3af" font-size="11">• Wire flag: <tspan fill="#f9fafb" class="font-mono">no-ack: True</tspan></text>
+        <text x="14" y="82" fill="#9ca3af" font-size="11">• Entrega inmediata en ráfaga</text>
+        <text x="14" y="98" fill="#10b981" font-size="11" font-weight="600">• Cero tráfico de ACKs de retorno</text>
+      </g>
+
+      <!-- Consumidor Crítico -->
+      <g id="node-consumer-critical" transform="translate(935, 375)">
+        <rect width="265" height="135" rx="12" fill="#1f2937" stroke="#ef4444" stroke-width="2" filter="url(#box-shadow)"/>
+        <rect x="14" y="12" width="105" height="18" rx="4" fill="rgba(239,68,68,0.15)"/>
+        <text x="22" y="25" fill="#ef4444" font-size="10" font-weight="700">auto_ack = False</text>
+        
+        <text x="14" y="48" fill="#f9fafb" font-size="13" font-weight="700">consumer_critical.py</text>
+        <text x="14" y="66" fill="#9ca3af" font-size="11">• QoS Backpressure: <tspan fill="#f9fafb" class="font-mono">prefetch=1</tspan></text>
+        <text x="14" y="82" fill="#9ca3af" font-size="11">• Retiene en <tspan fill="#ef4444">Unacked</tspan> durante 4s</text>
+        <text x="14" y="98" fill="#9ca3af" font-size="11">• Simula proceso en base de datos</text>
+        
+        <rect x="14" y="106" width="235" height="20" rx="4" fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.3)"/>
+        <text x="22" y="120" fill="#10b981" font-size="10" font-weight="600">Emite Basic.Ack(tag=1) tras guardar</text>
+      </g>
+
+      <!-- ======================================================== -->
+      <!-- FLECHAS DE FLUJO Y ETIQUETAS DE BINDING REUBICADAS       -->
+      <!-- ======================================================== -->
+
+      <!-- 1. Flecha Productor -> Topic Exchange -->
+      <g id="arrow-prod-to-exchange">
+        <path d="M 225 310 L 315 310" fill="none" stroke="#FF6600" stroke-width="2.5" marker-end="url(#arrow-orange)"/>
+        
+        <!-- Badge sobre la flecha -->
+        <rect x="231" y="278" width="82" height="24" rx="4" fill="#111827" stroke="#374151" stroke-width="1"/>
+        <text x="272" y="294" fill="#f9fafb" font-size="9.5" font-weight="600" text-anchor="middle">Basic.Publish</text>
+      </g>
+
+      <!-- 2. Flecha Topic Exchange -> Cola Telemetría (Con espacio limpio) -->
+      <g id="arrow-exchange-to-telemetry">
+        <path d="M 445 275 C 475 220, 520 162, 630 162" fill="none" stroke="#06b6d4" stroke-width="2.2" marker-end="url(#arrow-cyan)"/>
+        
+        <!-- Badge Binding Telemetría (Centrado en el espacio libre entre Exchange y Cola) -->
+        <g transform="translate(485, 138)">
+          <rect width="118" height="34" rx="6" fill="#111827" stroke="#06b6d4" stroke-width="1.2"/>
+          <text x="59" y="14" fill="#9ca3af" font-size="8.5" font-weight="700" text-anchor="middle">BINDING KEY</text>
+          <text x="59" y="27" fill="#06b6d4" font-size="10.5" font-weight="700" class="font-mono" text-anchor="middle">#.metric (2 msgs)</text>
+        </g>
+      </g>
+
+      <!-- 3. Flecha Topic Exchange -> Cola Alarmas (Con espacio limpio) -->
+      <g id="arrow-exchange-to-critical">
+        <path d="M 445 345 C 475 400, 520 442, 630 442" fill="none" stroke="#ef4444" stroke-width="2.2" marker-end="url(#arrow-red)"/>
+        
+        <!-- Badge Binding Alarma (Centrado en el espacio libre sin tocar la cola) -->
+        <g transform="translate(485, 435)">
+          <rect width="118" height="34" rx="6" fill="#111827" stroke="#ef4444" stroke-width="1.2"/>
+          <text x="59" y="14" fill="#9ca3af" font-size="8.5" font-weight="700" text-anchor="middle">BINDING KEY</text>
+          <text x="59" y="27" fill="#ef4444" font-size="10.5" font-weight="700" class="font-mono" text-anchor="middle">#.critical (1 msg)</text>
+        </g>
+      </g>
+
+      <!-- 4. Flecha Cola Telemetría -> Consumidor Telemetría -->
+      <g id="arrow-telemetry-to-consumer">
+        <path d="M 830 162 L 930 162" fill="none" stroke="#06b6d4" stroke-width="2" marker-end="url(#arrow-cyan)"/>
+        
+        <rect x="838" y="142" width="84" height="18" rx="4" fill="#111827" stroke="#374151"/>
+        <text x="880" y="155" fill="#06b6d4" font-size="9.5" font-weight="600" text-anchor="middle">Basic.Deliver (x2)</text>
+      </g>
+
+      <!-- 5. Flecha Cola Alarmas -> Consumidor Crítico -->
+      <g id="arrow-critical-to-consumer">
+        <path d="M 830 425 L 930 425" fill="none" stroke="#ef4444" stroke-width="2" marker-end="url(#arrow-red)"/>
+        
+        <rect x="838" y="405" width="84" height="18" rx="4" fill="#111827" stroke="#374151"/>
+        <text x="880" y="418" fill="#ef4444" font-size="9.5" font-weight="600" text-anchor="middle">Basic.Deliver (x1)</text>
+      </g>
+
+      <!-- 6. Flecha Retorno: Consumidor Crítico -> Broker (Basic.Ack) -->
+      <g id="arrow-ack-return">
+        <path d="M 935 470 Q 880 495 832 465" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrow-green)"/>
+        
+        <rect x="846" y="488" width="80" height="20" rx="4" fill="#111827" stroke="#10b981" stroke-width="1"/>
+        <text x="886" y="502" fill="#10b981" font-size="9.5" font-weight="700" text-anchor="middle">Basic.Ack</text>
+        <text x="886" y="520" fill="#9ca3af" font-size="8.5" text-anchor="middle">(a los 4s)</text>
+      </g>
+
+      <!-- ======================================================== -->
+      <!-- BARRA INFERIOR: DETALLES DE PROTOCOLO                    -->
+      <!-- ======================================================== -->
+      <g id="wire-footer" transform="translate(30, 580)">
+        <rect width="1170" height="40" rx="8" fill="#1e293b" stroke="#374151"/>
+        
+        <text x="25" y="25" fill="#9ca3af" font-size="11" font-weight="700">PROTOCOLO AMQP 0-9-1:</text>
+        <text x="200" y="25" fill="#f9fafb" font-size="11" class="font-mono">Puerto: TCP 5672</text>
+        <text x="400" y="25" fill="#f9fafb" font-size="11" class="font-mono">Multiplexación: Channel 0 (Control) / Channel 1 (Datos)</text>
+        <text x="910" y="25" fill="#f9fafb" font-size="11" class="font-mono">Delimitador de Trama: 0xCE</text>
+      </g>
+
+    </svg>
+  </div>
+
+  <script>
+    if (new URLSearchParams(window.location.search).get('theme') === 'light') {
+      document.body.classList.add('light-theme');
+    }
+    function toggleTheme() {
+      document.body.classList.toggle('light-theme');
+    }
+  </script>
+</body>
+</html>

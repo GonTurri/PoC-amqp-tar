@@ -1,0 +1,26 @@
+flowchart LR
+    subgraph Prod["💻 Productor (producer.py)"]
+        P["Cliente AMQP<br/>(Canal Lógico 1)"]
+    end
+
+    subgraph Broker["🐰 RabbitMQ Broker (Docker TCP :5672)"]
+        EX{{"Topic Exchange<br/>'industria.eventos'<br/>(durable=True)"}}
+        
+        Q_TEL[("Cola Telemetría<br/>'cola_telemetria_historica'<br/>(2 msgs Ready)")]
+        Q_CRIT[("Cola Alarmas Críticas<br/>'cola_alarmas_criticas'<br/>(1 msg Ready -> Unacked)")]
+
+        EX -->|"Binding: '#.metric'<br/>(2 mensajes)"| Q_TEL
+        EX -->|"Binding: '#.critical'<br/>(1 mensaje)"| Q_CRIT
+    end
+
+    subgraph Cons["⚙️ Consumidores"]
+        C_TEL["📊 consumer_telemetry.py<br/>Modo: auto_ack=True (no-ack: True)<br/>Alto Throughput / Sin ACKs"]
+        C_CRIT["🚨 consumer_critical.py<br/>Modo: auto_ack=False (no-ack: False)<br/>QoS Prefetch=1 / Tolerante a fallos"]
+    end
+
+    P -.->|"1. Declara Topología<br/>(Exchange, Queues, Bindings)"| EX
+    P ==>|"2. Basic.Publish (x3)<br/>[Method + Header(delivery_mode=2) + Body + 0xCE]"| EX
+
+    Q_TEL ==>|"3a. Basic.Deliver (x2 en ráfaga)<br/>(Se borran al enviar)"| C_TEL
+    Q_CRIT ==>|"3b. Basic.Deliver (x1)<br/>(Retenido en Unacked 4s)"| C_CRIT
+    C_CRIT -.->|"4. Basic.Ack (tag=1)<br/>(Recién a los 4s borra de la cola)"| Q_CRIT

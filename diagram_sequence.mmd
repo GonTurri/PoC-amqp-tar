@@ -1,0 +1,25 @@
+sequenceDiagram
+    autonumber
+    participant P as 💻 producer.py
+    participant B as 🐰 RabbitMQ Broker (:5672)
+    participant CC as 🚨 consumer_critical.py
+    participant CT as 📊 consumer_telemetry.py
+
+    Note over P,B: FASE 1: Handshake, Topología y Publicación
+    P->>B: Protocol-Header 0-9-1 + Connection.Open (Channel 0)
+    P->>B: Channel.Open (Channel 1)
+    P->>B: Exchange.Declare + Queue.Declare (x2) + Queue.Bind (x2)
+    P->>B: Basic.Publish + Content-Header (delivery_mode=2) + Content-Body [0xCE] (x3)
+    Note over B: Topic Exchange enruta:<br/>2 msgs -> cola_telemetria<br/>1 msg -> cola_alarmas
+
+    Note over B,CC: FASE 2: Consumidor Crítico (Manual ACK + QoS)
+    CC->>B: Basic.Qos (prefetch_count=1)
+    CC->>B: Basic.Consume (cola_alarmas, no-ack=False)
+    B->>CC: Basic.Deliver (delivery_tag=1) [Estado en Broker: UNACKED]
+    Note over CC: Procesando en BD (4 segundos)...
+    CC->>B: Basic.Ack (delivery_tag=1) [Broker elimina el mensaje]
+
+    Note over B,CT: FASE 3: Consumidor Telemetría (Auto ACK / Ráfaga)
+    CT->>B: Basic.Consume (cola_telemetria, no-ack=True)
+    B->>CT: Basic.Deliver (x2 en ráfaga) [Broker elimina al enviar]
+    Note over CT,B: Sin paquetes Basic.Ack (Ahorro de red)
