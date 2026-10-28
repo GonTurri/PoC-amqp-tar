@@ -443,7 +443,7 @@
             </div>
           </div>
           <p class="text-[11px] font-mono text-slate-400 pt-1">
-            * El byte final <code>0xCE</code> valida la integridad del stream TCP para evitar desalineaciones en buffers de red.
+            * El octeto final <code>0xCE</code> actúa como centinela delimitador de trama (framing) para detectar desincronizaciones en el stream TCP.
           </p>
         </div>
 
@@ -462,7 +462,7 @@
           <div class="p-4 rounded-lg bg-card border border-line space-y-2">
             <span class="font-mono text-emerald-400 font-semibold uppercase">Multiplexación & Heartbeats</span>
             <ul class="text-slate-300 space-y-1.5">
-              <li>• <strong>Canales Virtuales:</strong> Hasta 65.535 flujos lógicos por conexión TCP.</li>
+              <li>• <strong>Canales Virtuales:</strong> Campo de 16 bits (hasta 65.535 teóricos, negociado en <code>Connection.Tune</code>; RabbitMQ por defecto ofrece 2047).</li>
               <li>• <strong>Canal 0 Reservado:</strong> Handshake (Start/Tune/Open) y Heartbeats.</li>
               <li>• <strong>Detección de Caída:</strong> 2 heartbeats fallidos cierran el socket de inmediato sin esperar timeouts del SO.</li>
             </ul>
@@ -508,9 +508,9 @@
         <!-- Durabilidad y ACKs -->
         <div class="p-5 rounded-lg bg-card border border-line space-y-3">
           <span class="text-xs font-mono text-emerald-400 font-semibold uppercase">Garantías de Entrega</span>
-          <h3 class="text-sm font-bold text-white">At-Least-Once Delivery</h3>
+          <h3 class="text-sm font-bold text-white">At-Least-Once (Hacia el Consumidor)</h3>
           <ul class="text-xs text-slate-300 space-y-2">
-            <li>• <strong>Persistencia:</strong> Colas durables + mensajes en disco (<code>fsync</code>).</li>
+            <li>• <strong>Persistencia:</strong> Colas durables + mensajes en disco (<code>delivery_mode=2</code>).</li>
             <li>• <strong>Basic.Ack explícito:</strong> El mensaje se borra del búfer solo al confirmarse su procesamiento.</li>
             <li>• <strong>Reentrega automática:</strong> Si el canal cae sin ACK, el mensaje se redirige a otro receptor.</li>
           </ul>
@@ -562,8 +562,8 @@
             <thead class="bg-subtle text-slate-400 border-b border-line">
               <tr>
                 <th class="p-3">Vector de Red</th>
-                <th class="p-3 text-slate-300">MQTT (Borde)</th>
-                <th class="p-3 text-brand">AMQP (Core)</th>
+                <th class="p-3 text-slate-300">MQTT 3.1.1 (Borde)</th>
+                <th class="p-3 text-brand">AMQP 0-9-1 (Core)</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-line text-slate-300">
@@ -574,18 +574,18 @@
               </tr>
               <tr>
                 <td class="p-3 text-slate-400">Mecanismo de Ruteo</td>
-                <td class="p-3">Topic estático jerárquico</td>
+                <td class="p-3">Topic jerárquico directo</td>
                 <td class="p-3 text-brand">Exchange + Binding desacoplado</td>
               </tr>
               <tr>
                 <td class="p-3 text-slate-400">Balanceo de Carga</td>
-                <td class="p-3">No nativo</td>
+                <td class="p-3">No nativo en 3.1.1 (Fanout simple)</td>
                 <td class="p-3 text-brand">Nativo (Round-Robin sobre colas)</td>
               </tr>
               <tr>
                 <td class="p-3 text-slate-400">Confirmación (ACK)</td>
-                <td class="p-3">Recepción de paquete</td>
-                <td class="p-3 text-emerald-400">Post-persistencia en almacenamiento</td>
+                <td class="p-3">Transporte (recepción del paquete)</td>
+                <td class="p-3 text-emerald-400">Aplicación (Basic.Ack post-procesado)</td>
               </tr>
             </tbody>
           </table>

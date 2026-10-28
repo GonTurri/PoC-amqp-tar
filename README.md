@@ -38,10 +38,15 @@ Prueba de concepto (PoC) reproducible de **AMQP 0-9-1** implementada con **Pytho
    source venv/bin/activate
    docker compose up -d
    ```
-   *(Si estuviste haciendo pruebas antes, tirá `docker compose restart rabbitmq` para dejar las colas limpias en 0).*
-2. **Navegador** abierto en [http://localhost:15672/#/queues](http://localhost:15672/#/queues) (Usuario: `guest`, Contraseña: `guest`).
+   *(Si se quiere reiniciar desde cero el broker y colas: `docker compose down -v && docker compose up -d`).*
+2. **Aprovisionar la topología de red (IaC / Setup inicial)**:
+   ```bash
+   python setup_topology.py
+   ```
+   *(Declara el Topic Exchange `industria.eventos`, las dos colas durables y sus bindings. Esto asegura el desacoplamiento total del productor).*
+3. **Navegador** abierto en [http://localhost:15672/#/queues](http://localhost:15672/#/queues) (Usuario: `guest`, Contraseña: `guest`).
    * Arriba a la derecha cambiá *"Do not refresh"* a **"Refresh every 5 seconds"**.
-3. **Wireshark** abierto:
+4. **Wireshark** abierto:
    * Elegí la interfaz **`Loopback: lo0`** y dejalo capturando.
    * En la barra de filtro escribí **`amqp`** y apretá Enter.
 
@@ -57,24 +62,31 @@ Prueba de concepto (PoC) reproducible de **AMQP 0-9-1** implementada con **Pytho
    * `cola_telemetria_historica` $\to$ **Ready: 2**
    * `cola_alarmas_criticas` $\to$ **Ready: 1**
 3. **Qué explicar**:
-   > *"El productor envió los 3 eventos a un único Topic Exchange (`industria.eventos`). El broker inspeccionó las Routing Keys (`#.metric` vs `#.critical`) y bifurcó los mensajes en dos colas distintas. Además, como todavía no prendimos ningún consumidor, vemos el desacoplamiento temporal: los mensajes quedan retenidos de forma segura en el broker."*
+   > *"Miren el código de `producer.py`: está 100% desacoplado. El emisor desconoce cuántas colas existen o quién escucha; solo publica eventos al Topic Exchange con su routing key. El broker evaluó las routing keys (`#.metric` vs `#.critical`) y bifurcó el tráfico automáticamente hacia las colas correspondientes."*
 
 ---
 
-## ⚡ PASO 2: Ejecutar los dos Consumidores (40 seg)
+## ⚡ PASO 2: Tolerancia a Fallos, QoS y Consumo (45 seg)
 
-1. **Consumidor Crítico (`auto_ack=False` + QoS)**:
+1. **Consumidor Crítico (`auto_ack=False` + QoS) — Prueba de Caída**:
    ```bash
    python consumer_critical.py
    ```
-   * Recibe la alarma crítica, espera **4 segundos** (simulando escritura transaccional) e imprime:
-     `[✓] Procesamiento confirmado. Trama Basic.Ack(tag=1) enviada al broker.`
-   * Apretá **`Ctrl + C`** para salir.
+   * Recibe la alarma crítica: `Redelivered: False`.
+   * Durante la espera de 4 segundos, presionar **`Ctrl + C`** para simular la caída del nodo.
+   * Mostrar en consola que se interrumpió antes de emitir `Basic.Ack`. En RabbitMQ la alarma regresa de inmediato a **`Ready: 1`** (cero pérdida de datos).
+   * **Relanzar el consumidor**:
+     ```bash
+     python consumer_critical.py
+     ```
+   * Ahora muestra en vivo: **`Redelivered: True (¡REENTREGA DETECTADA TRAS FALLA!)`**.
+   * Dejar correr los 4 segundos: se emite `Basic.Ack(tag=1)`. Presionar `Ctrl+C` para salir.
+
 2. **Consumidor de Telemetría (`auto_ack=True`)**:
    ```bash
    python consumer_telemetry.py
    ```
-   * Consume los **2 mensajes de sensores al instante** sin demoras.
+   * Consume los **2 mensajes de sensores al instante** demostrando el modo de alta frecuencia sin confirmación manual (`auto_ack=True`).
    * Apretá **`Ctrl + C`** para salir.
 3. **En el Navegador (RabbitMQ UI)**:
    * Mostrá que **ambas colas quedaron en 0 mensajes**.
