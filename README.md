@@ -2,6 +2,9 @@
 
 Prueba de concepto (PoC) reproducible de **AMQP 0-9-1** implementada con **Python**, **RabbitMQ** y **Docker**, diseñada para demostraciones académicas en la materia **Redes Avanzadas**.
 
+> 🌐 **Presentación Online en Vivo**: [https://gonturri.github.io/PoC-amqp-tar/](https://gonturri.github.io/PoC-amqp-tar/)  
+> 🗺️ **Diagrama de Arquitectura (System Design)**: [https://gonturri.github.io/PoC-amqp-tar/arquitectura_amqp.html](https://gonturri.github.io/PoC-amqp-tar/arquitectura_amqp.html)
+
 ---
 
 ## 🛠️ Arquitectura y Topología Lógica

@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AMQP 0-9-1 | Tecnologías Avanzadas en Redes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Menlo', 'Consolas', 'monospace']
+          },
+          colors: {
+            canvas: '#0c0d0e',
+            card: '#141618',
+            subtle: '#1f2226',
+            line: '#282c33',
+            brand: '#38bdf8'
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    body {
+      background-color: #0c0d0e;
+      color: #e5e7eb;
+      font-family: 'Inter', sans-serif;
+    }
+    .slide-active {
+      display: flex;
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.2s ease;
+    }
+    .slide-hidden {
+      display: none;
+      opacity: 0;
+      visibility: hidden;
+    }
+    code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col justify-between antialiased select-none">
+
+  <!-- TOP BAR: Minimalista y técnica -->
+  <header class="h-14 px-8 border-b border-line flex items-center justify-between z-20 flex-shrink-0">
+    <div class="flex items-center space-x-3 text-xs tracking-wider font-mono">
+      <span class="text-slate-400 font-semibold uppercase">Tecnologías Avanzadas en Redes</span>
+      <span class="text-slate-600">/</span>
+      <span class="text-white">AMQP 0-9-1</span>
+    </div>
+
+    <!-- Indicador & Tools -->
+    <div class="flex items-center space-x-4">
+      <button id="fullscreen-btn" title="Pantalla completa (F)" class="text-slate-400 hover:text-white transition">
+        <i data-lucide="maximize" class="w-4 h-4"></i>
+      </button>
+      <span class="text-xs font-mono text-slate-400">
+        <span id="slide-index" class="text-brand font-semibold">1</span><span class="text-slate-600"> / 10</span>
+      </span>
+    </div>
+  </header>
+
+  <!-- SLIDES WRAPPER -->
+  <main class="relative flex-1 w-full max-w-5xl mx-auto px-6 py-6 md:py-8 flex items-center justify-center">
+
+    <!-- SLIDE 1: Portada Minimalista & Evolución de Arquitectura -->
+    <section class="slide slide-active flex-col justify-between w-full h-full py-2" data-slide="1">
+      <!-- Título principal sin cards ni badges inventados -->
+      <div class="space-y-2">
+        <h1 class="text-4xl md:text-6xl font-bold tracking-tight text-white">
+          AMQP 0-9-1
+        </h1>
+        <p class="text-lg md:text-xl text-slate-300 font-light">
+          Protocolo de Mensajería Confiable para Internet de las Cosas Industrial
+        </p>
+      </div>
+
+      <!-- Evolución Arquitectónica: De Polling punto a punto a Bus de Eventos -->
+      <div class="my-auto space-y-4">
+        <!-- Definición SCADA y contexto -->
+        <div class="space-y-1">
+          <div class="text-xs font-mono tracking-wider text-slate-400">
+            <span class="text-white font-semibold">SCADA:</span> Supervisory Control and Data Acquisition
+          </div>
+          <p class="text-xs md:text-sm text-slate-400">
+            Transición desde el sondeo cíclico y acoplamiento maestro-esclavo hacia arquitecturas reactivas orientadas a eventos.
+          </p>
+        </div>
+
+        <!-- Diagrama SVG comparativo de evolución (sin cards) -->
+        <div class="w-full py-3">
+          <svg viewBox="0 0 880 180" class="w-full h-auto" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="arr-subtle" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1 L 8 5 L 0 9 z" fill="#64748b"/>
+              </marker>
+              <marker id="arr-brand" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1 L 8 5 L 0 9 z" fill="#38bdf8"/>
+              </marker>
+            </defs>
+
+            <!-- Paradigma Clásico: Polling punto a punto -->
+            <g>
+              <text x="180" y="24" fill="#94a3b8" font-family="Inter, sans-serif" font-size="12" font-weight="600" text-anchor="middle" letter-spacing="1">SCADA TRADICIONAL (X.25 / Modbus)</text>
+              <text x="180" y="40" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="10" text-anchor="middle">Sondeo Cíclico · Acoplamiento Punto a Punto</text>
+
+              <!-- RTU / Sensores -->
+              <rect x="30" y="60" width="80" height="32" rx="4" fill="#141618" stroke="#334155" stroke-width="1.2"/>
+              <text x="70" y="80" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="10" text-anchor="middle">RTU / Sensor</text>
+
+              <rect x="30" y="110" width="80" height="32" rx="4" fill="#141618" stroke="#334155" stroke-width="1.2"/>
+              <text x="70" y="130" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="10" text-anchor="middle">PLC Planta</text>
+
+              <!-- MTU Central -->
+              <rect x="250" y="85" width="80" height="32" rx="4" fill="#141618" stroke="#475569" stroke-width="1.2"/>
+              <text x="290" y="105" fill="#f1f5f9" font-family="JetBrains Mono, monospace" font-size="10" text-anchor="middle">MTU Central</text>
+
+              <!-- Conexiones Punto a Punto bidireccionales -->
+              <path d="M 110 76 L 246 95" stroke="#64748b" stroke-width="1.2" stroke-dasharray="3 3" marker-end="url(#arr-subtle)"/>
+              <path d="M 110 126 L 246 107" stroke="#64748b" stroke-width="1.2" stroke-dasharray="3 3" marker-end="url(#arr-subtle)"/>
+              <text x="175" y="105" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" text-anchor="middle">Polling 1:1</text>
+            </g>
+
+            <!-- Divisor sutil vertical -->
+            <line x1="420" y1="20" x2="420" y2="160" stroke="#282c33" stroke-width="1" stroke-dasharray="4 4"/>
+            <text x="420" y="95" fill="#38bdf8" font-family="Inter, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">→</text>
+
+            <!-- Paradigma Moderno: AMQP Middleware -->
+            <g transform="translate(440, 0)">
+              <text x="210" y="24" fill="#38bdf8" font-family="Inter, sans-serif" font-size="12" font-weight="600" text-anchor="middle" letter-spacing="1">MIDDLEWARE ORIENTADO A EVENTOS (AMQP)</text>
+              <text x="210" y="40" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="10" text-anchor="middle">Desacoplamiento Espacio-Temporal · Push por Demanda</text>
+
+              <!-- Nodos Emisores -->
+              <rect x="10" y="60" width="80" height="32" rx="4" fill="#141618" stroke="#334155" stroke-width="1.2"/>
+              <text x="50" y="80" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="10" text-anchor="middle">Sensores IIoT</text>
+
+              <rect x="10" y="110" width="80" height="32" rx="4" fill="#141618" stroke="#334155" stroke-width="1.2"/>
+              <text x="50" y="130" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="10" text-anchor="middle">PLCs / Edge</text>
+
+              <!-- Broker de Mensajería Central -->
+              <rect x="160" y="70" width="100" height="60" rx="4" fill="#141618" stroke="#38bdf8" stroke-width="1.5"/>
+              <text x="210" y="97" fill="#38bdf8" font-family="JetBrains Mono, monospace" font-size="11" font-weight="bold" text-anchor="middle">AMQP BROKER</text>
+              <text x="210" y="113" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" text-anchor="middle">Exchange + Queues</text>
+
+              <!-- Consumidores Múltiples (Cajas ampliadas para evitar desborde de texto) -->
+              <rect x="325" y="55" width="105" height="28" rx="4" fill="#141618" stroke="#334155" stroke-width="1.2"/>
+              <text x="377" y="73" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="8.5" text-anchor="middle">Monitoreo HMI</text>
+
+              <rect x="325" y="90" width="105" height="28" rx="4" fill="#141618" stroke="#334155" stroke-width="1.2"/>
+              <text x="377" y="108" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="8.5" text-anchor="middle">Historiador / DB</text>
+
+              <rect x="325" y="125" width="105" height="28" rx="4" fill="#141618" stroke="#334155" stroke-width="1.2"/>
+              <text x="377" y="143" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="8.5" text-anchor="middle">Analítica Cloud</text>
+
+              <!-- Conexiones Asíncronas -->
+              <path d="M 90 76 L 156 90" stroke="#38bdf8" stroke-width="1.2" marker-end="url(#arr-brand)"/>
+              <path d="M 90 126 L 156 110" stroke="#38bdf8" stroke-width="1.2" marker-end="url(#arr-brand)"/>
+
+              <path d="M 260 90 L 321 69" stroke="#38bdf8" stroke-width="1.2" marker-end="url(#arr-brand)"/>
+              <path d="M 260 100 L 321 104" stroke="#38bdf8" stroke-width="1.2" marker-end="url(#arr-brand)"/>
+              <path d="M 260 110 L 321 139" stroke="#38bdf8" stroke-width="1.2" marker-end="url(#arr-brand)"/>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Presentadores: diseño tipográfico abierto, legible y jerarquizado -->
+      <div class="border-t border-line/60 pt-4">
+        <span class="text-[11px] font-mono tracking-widest uppercase text-slate-500 block mb-2">Expositores</span>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm font-sans">
+          <div>
+            <div class="text-white font-medium">Julián Cardoso Landin</div>
+          </div>
+          <div>
+            <div class="text-white font-medium">Uriel Grifman</div>
+          </div>
+          <div>
+            <div class="text-white font-medium">Matías Gabriel Jastrebow</div>
+          </div>
+          <div>
+            <div class="text-white font-medium">Gonzalo Ivo Turri</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Arquitectura en 2 Capas -->
+    <section class="slide slide-hidden flex-col justify-between w-full h-full" data-slide="2">
+      <div>
+        <span class="text-xs font-mono text-slate-500 uppercase tracking-widest">Pila de Protocolo</span>
+        <h2 class="text-3xl font-bold tracking-tight text-white mt-1">Estructura en Dos Capas</h2>
+        <p class="text-sm text-slate-400 mt-1">Protocolo binario con tipado estricto sobre transporte TCP (puerto 5672 / 5671 TLS).</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-auto">
+        <!-- Functional Layer -->
+        <div class="p-6 rounded-lg bg-card border border-line space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono text-brand font-semibold uppercase tracking-wider">Capa Superior</span>
+            <span class="text-xs font-mono text-slate-500">Semántica de Aplicación</span>
+          </div>
+          <h3 class="text-xl font-bold text-white">Functional Layer</h3>
+          <ul class="text-sm text-slate-300 space-y-3">
+            <li class="flex items-start gap-2.5">
+              <span class="text-brand font-bold">›</span>
+              <span><strong>Modelo Lógico:</strong> Entidades Exchange, Queue y Binding.</span>
+            </li>
+            <li class="flex items-start gap-2.5">
+              <span class="text-brand font-bold">›</span>
+              <span><strong>Comandos Formales:</strong> Operaciones <code>Declare</code>, <code>Bind</code>, <code>Publish</code>, <code>Consume</code>.</span>
+            </li>
+            <li class="flex items-start gap-2.5">
+              <span class="text-brand font-bold">›</span>
+              <span><strong>Semántica de Entrega:</strong> Confirmaciones explícitas (<code>Ack</code> / <code>Nack</code>).</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Transport Layer -->
+        <div class="p-6 rounded-lg bg-card border border-line space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono text-emerald-400 font-semibold uppercase tracking-wider">Capa Inferior</span>
+            <span class="text-xs font-mono text-slate-500">Nivel de Red</span>
+          </div>
+          <h3 class="text-xl font-bold text-white">Transport Layer</h3>
+          <ul class="text-sm text-slate-300 space-y-3">
+            <li class="flex items-start gap-2.5">
+              <span class="text-emerald-400 font-bold">›</span>
+              <span><strong>Framing Binario:</strong> Estructura fija de tramas empaquetadas.</span>
+            </li>
+            <li class="flex items-start gap-2.5">
+              <span class="text-emerald-400 font-bold">›</span>
+              <span><strong>Multiplexación:</strong> Canales lógicos independientes sobre 1 conexión TCP.</span>
+            </li>
+            <li class="flex items-start gap-2.5">
+              <span class="text-emerald-400 font-bold">›</span>
+              <span><strong>Supervisión de Enlace:</strong> Heartbeats y control asimétrico de caídas.</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: Modelo AMQ -->
+    <section class="slide slide-hidden flex-col justify-between w-full h-full" data-slide="3">
+      <div>
+        <span class="text-xs font-mono text-slate-500 uppercase tracking-widest">Capa Funcional</span>
+        <h2 class="text-3xl font-bold tracking-tight text-white mt-1">El Modelo AMQ</h2>
+        <p class="text-sm text-slate-400 mt-1">Separación estricta de responsabilidades: <em>Enrutar jamás es almacenar</em>.</p>
+      </div>
+
+      <!-- Diagrama de Flujo Minimalista -->
+      <div class="my-auto space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-5 rounded-lg bg-card border border-line space-y-2">
+            <span class="text-xs font-mono text-brand font-semibold uppercase">1. Enrutador Lógico</span>
+            <h3 class="text-lg font-bold text-white">Exchange</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Agente ruteador sin retención. Inspecciona atributos del paquete y la <em>Routing Key</em> para decidir los saltos.
+            </p>
+          </div>
+
+          <div class="p-5 rounded-lg bg-card border border-line space-y-2">
+            <span class="text-xs font-mono text-amber-400 font-semibold uppercase">2. Regla de Asociación</span>
+            <h3 class="text-lg font-bold text-white">Binding</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Tabla de despacho configurada en el broker. Vincula un Exchange con una cola según un patrón de coincidencia.
+            </p>
+          </div>
+
+          <div class="p-5 rounded-lg bg-card border border-line space-y-2">
+            <span class="text-xs font-mono text-emerald-400 font-semibold uppercase">3. Búfer de Estado</span>
+            <h3 class="text-lg font-bold text-white">Queue</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Estructura FIFO de retención en memoria y/o disco. Retiene datos hasta recibir la confirmación (<code>Ack</code>) de la red.
+            </p>
+          </div>
+        </div>
+
+        <!-- Visual Flow Wire -->
+        <div class="p-4 rounded-lg bg-subtle border border-line flex items-center justify-around font-mono text-xs text-slate-300">
+          <span class="text-slate-400">Emisor</span>
+          <span class="text-slate-600">──[Publish]──▶</span>
+          <span class="px-2 py-1 rounded bg-card border border-brand/50 text-brand font-semibold">Exchange</span>
+          <span class="text-slate-600">──[Binding]──▶</span>
+          <span class="px-2 py-1 rounded bg-card border border-emerald-500/50 text-emerald-400 font-semibold">Queue</span>
+          <span class="text-slate-600">──[Push]──▶</span>
+          <span class="text-slate-400">Receptor</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: Topología Programable y Declare -->
+    <section class="slide slide-hidden flex-col justify-between w-full h-full" data-slide="4">
+      <div>
+        <span class="text-xs font-mono text-slate-500 uppercase tracking-widest">Semántica Operativa</span>
+        <h2 class="text-3xl font-bold tracking-tight text-white mt-1">Topología Definida por Protocolo</h2>
+        <p class="text-sm text-slate-400 mt-1">La red se cablea dinámicamente mediante primitivas de comunicación entre cliente y broker.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-auto">
+        <div class="p-6 rounded-lg bg-card border border-line space-y-4">
+          <span class="text-xs font-mono text-brand font-semibold uppercase tracking-wider">Idempotencia</span>
+          <h3 class="text-lg font-bold text-white">Primitivas <code>Declare</code></h3>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            Las operaciones <code>Exchange.Declare</code> y <code>Queue.Declare</code> son aserciones de estado en la red:
+          </p>
+          <div class="p-3 bg-subtle rounded border border-line text-xs font-mono text-slate-300 space-y-1">
+            <div>• Si la entidad no existe ➔ la crea de inmediato.</div>
+            <div>• Si ya existe con idénticos flags ➔ continúa sin error.</div>
+            <div>• Si los parámetros colisionan ➔ responde <code>406 Precondition Failed</code>.</div>
+          </div>
+        </div>
+
+        <div class="p-6 rounded-lg bg-card border border-line space-y-4">
+          <span class="text-xs font-mono text-emerald-400 font-semibold uppercase tracking-wider">Flexibilidad en Planta</span>
+          <h3 class="text-lg font-bold text-white">Reconfiguración en Caliente</h3>
+          <ul class="text-sm text-slate-300 space-y-3">
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-400 font-bold">›</span>
+              <span><strong>Cero reinicios:</strong> Agregar nuevos sistemas receptores requiere únicamente un nuevo <code>Bind</code>.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-400 font-bold">›</span>
+              <span><strong>Emisores transparentes:</strong> PLCs y sensores continúan publicando a su Exchange sin notar cambios en la red.</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: Algoritmos de Ruteo -->
+    <section class="slide slide-hidden flex-col justify-between w-full h-full" data-slide="5">
+      <div>
+        <span class="text-xs font-mono text-slate-500 uppercase tracking-widest">Enrutamiento</span>
+        <h2 class="text-3xl font-bold tracking-tight text-white mt-1">Estrategias de Ruteo de Exchanges</h2>
+        <p class="text-sm text-slate-400 mt-1">Determinismo en la resolución entre <em>Routing Key</em> y <em>Binding Key</em>.</p>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 my-auto">
+        <!-- Direct -->
+        <div class="p-4 rounded-lg bg-card border border-line space-y-3">
+          <div class="text-xs font-mono text-brand font-semibold">DIRECT</div>
+          <div class="text-xs text-slate-300 font-bold">Unicast Estricto</div>
+          <div class="p-2 bg-subtle rounded border border-line text-[11px] font-mono text-slate-300">
+            Routing == Binding
+          </div>
+          <p class="text-xs text-slate-400">Coincidencia exacta de cadenas de texto.</p>
+        </div>
+
+        <!-- Fanout -->
+        <div class="p-4 rounded-lg bg-card border border-line space-y-3">
+          <div class="text-xs font-mono text-amber-400 font-semibold">FANOUT</div>
+          <div class="text-xs text-slate-300 font-bold">Broadcast Puro</div>
+          <div class="p-2 bg-subtle rounded border border-line text-[11px] font-mono text-slate-300">
+            1 ➔ N Colas
+          </div>
+          <p class="text-xs text-slate-400">Ignora routing keys. Replica a toda cola enlazada.</p>
+        </div>
+
+        <!-- Topic -->
+        <div class="p-4 rounded-lg bg-card border border-brand/50 space-y-3">
+          <div class="text-xs font-mono text-brand font-semibold">TOPIC</div>
+          <div class="text-xs text-slate-300 font-bold">Patrón Jerárquico</div>
+          <div class="p-2 bg-subtle rounded border border-line text-[11px] font-mono text-slate-300 space-y-1">
+            <div><code>*</code> = 1 palabra</div>
+            <div><code>#</code> = 0 ó + palabras</div>
+          </div>
+          <p class="text-xs text-slate-400">Filtrado estructural para topologías complejas.</p>
+        </div>
+
+        <!-- Headers -->
+        <div class="p-4 rounded-lg bg-card border border-line space-y-3">
+          <div class="text-xs font-mono text-purple-400 font-semibold">HEADERS</div>
+          <div class="text-xs text-slate-300 font-bold">Por Atributos</div>
+          <div class="p-2 bg-subtle rounded border border-line text-[11px] font-mono text-slate-300">
+            x-match: all / any
+          </div>
+          <p class="text-xs text-slate-400">Ruteo por metadatos de cabecera (multicriterio).</p>
+        </div>
+      </div>
+
+      <!-- Ejemplo Topic sintético -->
+      <div class="p-3 bg-subtle rounded-lg border border-line flex items-center justify-between text-xs font-mono text-slate-300">
+        <div>
+          <span class="text-slate-500">Routing Key: </span>
+          <span class="text-brand">planta1.horno.temperatura.critica</span>
+        </div>
+        <div class="flex gap-4">
+          <span class="text-emerald-400">✔ planta1.*.temperatura.*</span>
+          <span class="text-emerald-400">✔ #.critica</span>
+          <span class="text-rose-400">✖ planta2.#</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 6: Capa de Transporte (Wire-Level) -->
+    <section class="slide slide-hidden flex-col justify-between w-full h-full" data-slide="6">
+      <div>
+        <span class="text-xs font-mono text-slate-500 uppercase tracking-widest">Transporte y Cable</span>
+        <h2 class="text-3xl font-bold tracking-tight text-white mt-1">Framing Binario sobre TCP</h2>
+        <p class="text-sm text-slate-400 mt-1">Estructura estricta de longitud fija para parsing de alta velocidad sin delimitadores de texto.</p>
+      </div>
+
+      <!-- Anatomía del Frame en Wire -->
+      <div class="my-auto space-y-5">
+        <div class="p-5 rounded-lg bg-card border border-line space-y-3">
+          <div class="flex justify-between items-center text-xs font-mono text-slate-400">
+            <span>CABECERA FIJA (7 OCTETOS)</span>
+            <span>END BYTE</span>
+          </div>
+
+          <!-- Diagrama de campos de red -->
+          <div class="grid grid-cols-12 gap-1.5 text-center font-mono text-xs">
+            <div class="col-span-2 p-2.5 rounded bg-subtle border border-line">
+              <span class="text-brand font-bold block">Type</span>
+              <span class="text-[10px] text-slate-500">1 Octeto</span>
+            </div>
+            <div class="col-span-2 p-2.5 rounded bg-subtle border border-line">
+              <span class="text-brand font-bold block">Channel</span>
+              <span class="text-[10px] text-slate-500">2 Octetos</span>
+            </div>
+            <div class="col-span-2 p-2.5 rounded bg-subtle border border-line">
+              <span class="text-brand font-bold block">Size (N)</span>
+              <span class="text-[10px] text-slate-500">4 Octetos</span>
+            </div>
+            <div class="col-span-5 p-2.5 rounded bg-subtle border border-brand/40">
+              <span class="text-amber-300 font-bold block">Payload</span>
+              <span class="text-[10px] text-slate-500">N Octetos</span>
+            </div>
+            <div class="col-span-1 p-2.5 rounded bg-subtle border border-rose-900/60">
+              <span class="text-rose-400 font-bold block">0xCE</span>
+              <span class="text-[10px] text-slate-500">1 Octeto</span>
+            </div>
+          </div>
+          <p class="text-[11px] font-mono text-slate-400 pt-1">
+            * El byte final <code>0xCE</code> valida la integridad del stream TCP para evitar desalineaciones en buffers de red.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <!-- Tríada Publish -->
+          <div class="p-4 rounded-lg bg-card border border-line space-y-2">
+            <span class="font-mono text-brand font-semibold uppercase">Tríada de un Basic.Publish</span>
+            <div class="space-y-1 font-mono text-slate-300">
+              <div class="p-1.5 bg-subtle rounded border border-line">1. <strong>Method Frame:</strong> Clase 60, Método 40</div>
+              <div class="p-1.5 bg-subtle rounded border border-line">2. <strong>Content Header:</strong> Properties y tamaño de cuerpo</div>
+              <div class="p-1.5 bg-subtle rounded border border-line">3. <strong>Content Body (N):</strong> Fragmentos de carga útil</div>
+            </div>
+          </div>
+
+          <!-- Canales y Heartbeats -->
+          <div class="p-4 rounded-lg bg-card border border-line space-y-2">
+            <span class="font-mono text-emerald-400 font-semibold uppercase">Multiplexación & Heartbeats</span>
+            <ul class="text-slate-300 space-y-1.5">
+              <li>• <strong>Canales Virtuales:</strong> Hasta 65.535 flujos lógicos por conexión TCP.</li>
+              <li>• <strong>Canal 0 Reservado:</strong> Handshake (Start/Tune/Open) y Heartbeats.</li>
+              <li>• <strong>Detección de Caída:</strong> 2 heartbeats fallidos cierran el socket de inmediato sin esperar timeouts del SO.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7: Confiabilidad y QoS -->
+    <section class="slide slide-hidden flex-col justify-between w-full h-full" data-slide="7">
+      <div>
+        <span class="text-xs font-mono text-slate-500 uppercase tracking-widest">Control de Enlace</span>
+        <h2 class="text-3xl font-bold tracking-tight text-white mt-1">Confiabilidad y Control de Flujo</h2>
+        <p class="text-sm text-slate-400 mt-1">Semántica de aserciones de red y prevención de saturación en receptores industriales.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5 my-auto">
+        <!-- Filosofía de Errores -->
+        <div class="p-5 rounded-lg bg-card border border-line space-y-3">
+          <span class="text-xs font-mono text-rose-400 font-semibold uppercase">Manejo de Excepciones</span>
+          <h3 class="text-sm font-bold text-white leading-snug">"Success is silent, failure is noisy"</h3>
+          <ul class="text-xs text-slate-300 space-y-2">
+            <li>• <strong>Channel Exception:</strong> Cierra únicamente el canal del error (ej. colisión de flags). TCP sigue vivo.</li>
+            <li>• <strong>Connection Exception:</strong> Cierra el socket completo por corrupción de tramas a nivel wire.</li>
+          </ul>
+        </div>
+
+        <!-- Ventana QoS -->
+        <div class="p-5 rounded-lg bg-card border border-line space-y-3">
+          <span class="text-xs font-mono text-brand font-semibold uppercase">Backpressure de Red</span>
+          <h3 class="text-sm font-bold text-white">QoS Pre-fetch Window</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Comando <code>Basic.QoS(prefetch=1)</code>:
+          </p>
+          <div class="p-2.5 rounded bg-subtle border border-line text-xs font-mono text-brand">
+            prefetch_count = 1
+          </div>
+          <p class="text-xs text-slate-400">
+            El broker no transmite un nuevo paquete hasta recibir confirmación del anterior. Protege nodos con recursos acotados.
+          </p>
+        </div>
+
+        <!-- Durabilidad y ACKs -->
+        <div class="p-5 rounded-lg bg-card border border-line space-y-3">
+          <span class="text-xs font-mono text-emerald-400 font-semibold uppercase">Garantías de Entrega</span>
+          <h3 class="text-sm font-bold text-white">At-Least-Once Delivery</h3>
+          <ul class="text-xs text-slate-300 space-y-2">
+            <li>• <strong>Persistencia:</strong> Colas durables + mensajes en disco (<code>fsync</code>).</li>
+            <li>• <strong>Basic.Ack explícito:</strong> El mensaje se borra del búfer solo al confirmarse su procesamiento.</li>
+            <li>• <strong>Reentrega automática:</strong> Si el canal cae sin ACK, el mensaje se redirige a otro receptor.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 8: AMQP vs MQTT en ISA-95 -->
+    <section class="slide slide-hidden flex-col justify-between w-full h-full" data-slide="8">
+      <div>
+        <span class="text-xs font-mono text-slate-500 uppercase tracking-widest">Diseño de Arquitectura</span>
+        <h2 class="text-3xl font-bold tracking-tight text-white mt-1">Criterio de Selección: AMQP vs MQTT</h2>
+        <p class="text-sm text-slate-400 mt-1">Sinergia dentro de la pirámide industrial de automatización (ISA-95).</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 my-auto items-center">
+        <!-- Esquema Pirámide ISA-95 -->
+        <div class="md:col-span-5 flex flex-col items-center justify-center font-mono">
+          <svg viewBox="0 0 380 224" class="w-full h-auto max-h-[260px]" xmlns="http://www.w3.org/2000/svg">
+            <!-- NIVEL 4 / CLOUD -->
+            <polygon points="120,6 260,6 284,52 96,52" fill="#141618" stroke="#38bdf8" stroke-width="1.4"/>
+            <text x="190" y="25" fill="#f1f5f9" font-family="Inter, sans-serif" font-size="10.5" font-weight="700" text-anchor="middle">NIVEL 4 / CLOUD</text>
+            <text x="190" y="41" fill="#38bdf8" font-family="JetBrains Mono, monospace" font-size="9" font-weight="600" text-anchor="middle">ERP · Analítica · AMQP 0-9-1</text>
+
+            <!-- NIVEL 3: MES / HISTORIADOR -->
+            <polygon points="94,56 286,56 310,104 70,104" fill="#141618" stroke="#38bdf8" stroke-width="1.4"/>
+            <text x="190" y="77" fill="#f1f5f9" font-family="Inter, sans-serif" font-size="10.5" font-weight="700" text-anchor="middle">NIVEL 3: PLANTA</text>
+            <text x="190" y="93" fill="#38bdf8" font-family="JetBrains Mono, monospace" font-size="9" font-weight="600" text-anchor="middle">MES · Historiador · AMQP 0-9-1</text>
+
+            <!-- NIVEL 2: SCADA / HMI (GATEWAY) -->
+            <polygon points="68,108 312,108 336,156 44,156" fill="#1f2226" stroke="#f59e0b" stroke-width="1.3" stroke-dasharray="3 3"/>
+            <text x="190" y="128" fill="#f59e0b" font-family="Inter, sans-serif" font-size="10.5" font-weight="700" text-anchor="middle">NIVEL 2: SUPERVISIÓN</text>
+            <text x="190" y="145" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="9" text-anchor="middle">SCADA / HMI (Gateway Edge)</text>
+
+            <!-- NIVEL 0/1: CAMPO & SENSORES -->
+            <polygon points="42,160 338,160 362,216 18,216" fill="#141618" stroke="#34d399" stroke-width="1.4"/>
+            <text x="190" y="183" fill="#f1f5f9" font-family="Inter, sans-serif" font-size="10.5" font-weight="700" text-anchor="middle">NIVEL 0 / 1: CAMPO</text>
+            <text x="190" y="202" fill="#34d399" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600" text-anchor="middle">PLCs · Sensores IIoT · MQTT</text>
+          </svg>
+          <div class="flex items-center justify-between w-full px-1 mt-2 text-[10px] text-slate-400 font-mono">
+            <span class="text-brand">▲ Core & Cloud (IT): AMQP</span>
+            <span class="text-emerald-400">▼ Borde & Sensores (OT): MQTT</span>
+          </div>
+        </div>
+
+        <!-- Tabla de Contraste Técnico -->
+        <div class="md:col-span-7 rounded-lg border border-line bg-card overflow-hidden">
+          <table class="w-full text-left text-xs font-mono">
+            <thead class="bg-subtle text-slate-400 border-b border-line">
+              <tr>
+                <th class="p-3">Vector de Red</th>
+                <th class="p-3 text-slate-300">MQTT (Borde)</th>
+                <th class="p-3 text-brand">AMQP (Core)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-line text-slate-300">
+              <tr>
+                <td class="p-3 text-slate-400">Cabecera Mínima</td>
+                <td class="p-3 text-emerald-400">2 octetos</td>
+                <td class="p-3">7 octetos</td>
+              </tr>
+              <tr>
+                <td class="p-3 text-slate-400">Mecanismo de Ruteo</td>
+                <td class="p-3">Topic estático jerárquico</td>
+                <td class="p-3 text-brand">Exchange + Binding desacoplado</td>
+              </tr>
+              <tr>
+                <td class="p-3 text-slate-400">Balanceo de Carga</td>
+                <td class="p-3">No nativo</td>
+                <td class="p-3 text-brand">Nativo (Round-Robin sobre colas)</td>
+              </tr>
+              <tr>
+                <td class="p-3 text-slate-400">Confirmación (ACK)</td>
+                <td class="p-3">Recepción de paquete</td>
+                <td class="p-3 text-emerald-400">Post-persistencia en almacenamiento</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 9: Escenario de Demostración Práctica (Topología Pura) -->
+    <section class="slide slide-hidden flex-col justify-between w-full h-full py-2" data-slide="9">
+      <div>
+        <span class="text-xs font-mono text-slate-500 uppercase tracking-widest">Validación Experimental</span>
+        <h2 class="text-3xl font-bold tracking-tight text-white mt-1">Escenario de la Demostración</h2>
+        <p class="text-sm text-slate-400 mt-1">Topología de red, enrutamiento por topics y bifurcación de semánticas de entrega.</p>
+      </div>
+
+      <!-- Gráfico Integral SVG del Escenario de Laboratorio -->
+      <div class="my-auto w-full flex items-center justify-center">
+        <svg viewBox="0 0 940 370" class="w-full h-auto max-h-[380px]" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arr-demo-brand" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 8 5 L 0 9 z" fill="#38bdf8"/>
+            </marker>
+            <marker id="arr-demo-amber" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 8 5 L 0 9 z" fill="#f59e0b"/>
+            </marker>
+            <marker id="arr-demo-emerald" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 8 5 L 0 9 z" fill="#34d399"/>
+            </marker>
+            <marker id="arr-demo-back" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 8 5 L 0 9 z" fill="#fb7185"/>
+            </marker>
+          </defs>
+
+          <!-- ==================== 1. PRODUCTOR ==================== -->
+          <g transform="translate(10, 80)">
+            <rect x="0" y="0" width="180" height="200" rx="6" fill="#141618" stroke="#334155" stroke-width="1.3"/>
+            <text x="90" y="28" fill="#e2e8f0" font-family="Inter, sans-serif" font-size="13" font-weight="700" text-anchor="middle">PRODUCTOR</text>
+            <text x="90" y="44" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="10" text-anchor="middle">producer.py</text>
+            <line x1="16" y1="54" x2="164" y2="54" stroke="#282c33" stroke-width="1"/>
+
+            <!-- Atributos técnicos de red -->
+            <text x="20" y="76" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="10">TCP :5672</text>
+            <text x="20" y="94" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="10">Channel: 1</text>
+            
+            <rect x="16" y="112" width="148" height="68" rx="4" fill="#0c0d0e" stroke="#282c33" stroke-width="1"/>
+            <text x="24" y="130" fill="#38bdf8" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">3 Eventos Emitidos:</text>
+            <text x="24" y="148" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="9.5">• 1x alarma.critical</text>
+            <text x="24" y="166" fill="#34d399" font-family="JetBrains Mono, monospace" font-size="9.5">• 2x sensor.metric</text>
+          </g>
+
+          <!-- Flujo Productor -> Exchange -->
+          <path d="M 190 180 L 268 180" stroke="#38bdf8" stroke-width="2" marker-end="url(#arr-demo-brand)"/>
+          <text x="230" y="168" fill="#38bdf8" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600" text-anchor="middle">Basic.Publish</text>
+          <text x="230" y="196" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" text-anchor="middle">delivery_mode=2</text>
+
+          <!-- ==================== 2. BROKER RABBITMQ ==================== -->
+          <!-- Bounding box del Broker -->
+          <rect x="278" y="25" width="370" height="310" rx="8" fill="#141618" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="6 4"/>
+          <text x="296" y="48" fill="#38bdf8" font-family="Inter, sans-serif" font-size="11" font-weight="700" letter-spacing="1">RABBITMQ BROKER (localhost:5672)</text>
+
+          <!-- Topic Exchange -->
+          <g transform="translate(298, 120)">
+            <rect x="0" y="0" width="130" height="120" rx="6" fill="#0c0d0e" stroke="#38bdf8" stroke-width="1.5"/>
+            <text x="65" y="32" fill="#38bdf8" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" text-anchor="middle">TOPIC</text>
+            <text x="65" y="48" fill="#38bdf8" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" text-anchor="middle">EXCHANGE</text>
+            <line x1="16" y1="58" x2="114" y2="58" stroke="#282c33" stroke-width="1"/>
+            <text x="65" y="78" fill="#e2e8f0" font-family="JetBrains Mono, monospace" font-size="10" text-anchor="middle">industria</text>
+            <text x="65" y="94" fill="#e2e8f0" font-family="JetBrains Mono, monospace" font-size="10" text-anchor="middle">.eventos</text>
+          </g>
+
+          <!-- Binding 1: Hacia cola alarmas (critical) -->
+          <path d="M 428 155 C 460 155, 465 105, 494 105" stroke="#f59e0b" stroke-width="1.6" marker-end="url(#arr-demo-amber)"/>
+          <text x="466" y="92" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600" text-anchor="middle">Binding: #.critical</text>
+
+          <!-- Binding 2: Hacia cola telemetria (metric) -->
+          <path d="M 428 205 C 460 205, 465 255, 494 255" stroke="#34d399" stroke-width="1.6" marker-end="url(#arr-demo-emerald)"/>
+          <text x="466" y="272" fill="#34d399" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600" text-anchor="middle">Binding: #.metric</text>
+
+          <!-- Cola 1: Alarmas Críticas -->
+          <g transform="translate(502, 60)">
+            <rect x="0" y="0" width="130" height="90" rx="5" fill="#0c0d0e" stroke="#f59e0b" stroke-width="1.3"/>
+            <text x="65" y="24" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" text-anchor="middle">QUEUE</text>
+            <text x="65" y="40" fill="#e2e8f0" font-family="JetBrains Mono, monospace" font-size="9.5" text-anchor="middle">cola_alarmas</text>
+            <text x="65" y="54" fill="#e2e8f0" font-family="JetBrains Mono, monospace" font-size="9.5" text-anchor="middle">_criticas</text>
+            <rect x="25" y="64" width="80" height="18" rx="3" fill="#141618" stroke="#334155" stroke-width="1"/>
+            <text x="65" y="77" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="9" text-anchor="middle">Ready: 1</text>
+          </g>
+
+          <!-- Cola 2: Telemetría Histórica -->
+          <g transform="translate(502, 210)">
+            <rect x="0" y="0" width="130" height="90" rx="5" fill="#0c0d0e" stroke="#34d399" stroke-width="1.3"/>
+            <text x="65" y="24" fill="#34d399" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" text-anchor="middle">QUEUE</text>
+            <text x="65" y="40" fill="#e2e8f0" font-family="JetBrains Mono, monospace" font-size="9.5" text-anchor="middle">cola_telemetria</text>
+            <text x="65" y="54" fill="#e2e8f0" font-family="JetBrains Mono, monospace" font-size="9.5" text-anchor="middle">_historica</text>
+            <rect x="25" y="64" width="80" height="18" rx="3" fill="#141618" stroke="#334155" stroke-width="1"/>
+            <text x="65" y="77" fill="#34d399" font-family="JetBrains Mono, monospace" font-size="9" text-anchor="middle">Ready: 2</text>
+          </g>
+
+          <!-- ==================== 3. CONSUMIDOR CRÍTICO ==================== -->
+          <g transform="translate(740, 35)">
+            <rect x="0" y="0" width="190" height="140" rx="6" fill="#141618" stroke="#f59e0b" stroke-width="1.3"/>
+            <text x="95" y="24" fill="#e2e8f0" font-family="Inter, sans-serif" font-size="12" font-weight="700" text-anchor="middle">CONSUMIDOR CRÍTICO</text>
+            <text x="95" y="38" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9.5" text-anchor="middle">consumer_critical.py</text>
+            <line x1="16" y1="46" x2="174" y2="46" stroke="#282c33" stroke-width="1"/>
+            <text x="16" y="66" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">• Basic.QoS(prefetch=1)</text>
+            <text x="16" y="84" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">• no-ack: False</text>
+            <text x="16" y="102" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9.5">• Procesa tarea (4 seg)</text>
+            <text x="16" y="122" fill="#38bdf8" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">• Envía Basic.Ack explícito</text>
+          </g>
+
+          <!-- Enlace Cola Crítica -> Consumidor Crítico -->
+          <path d="M 632 95 L 730 95" stroke="#f59e0b" stroke-width="1.8" marker-end="url(#arr-demo-amber)"/>
+          <text x="680" y="86" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="9" text-anchor="middle">Basic.Deliver</text>
+
+          <!-- Enlace de Retorno: Basic.Ack manual -->
+          <path d="M 730 115 L 640 115" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#arr-demo-back)"/>
+          <text x="685" y="128" fill="#fb7185" font-family="JetBrains Mono, monospace" font-size="8.5" text-anchor="middle">Basic.Ack (t+4s)</text>
+
+          <!-- ==================== 4. CONSUMIDOR TELEMETRÍA ==================== -->
+          <g transform="translate(740, 195)">
+            <rect x="0" y="0" width="190" height="130" rx="6" fill="#141618" stroke="#34d399" stroke-width="1.3"/>
+            <text x="95" y="24" fill="#e2e8f0" font-family="Inter, sans-serif" font-size="12" font-weight="700" text-anchor="middle">CONSUMIDOR TELEMETRÍA</text>
+            <text x="95" y="38" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9.5" text-anchor="middle">consumer_telemetry.py</text>
+            <line x1="16" y1="46" x2="174" y2="46" stroke="#282c33" stroke-width="1"/>
+            <text x="16" y="66" fill="#34d399" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">• no-ack: True (Auto-ack)</text>
+            <text x="16" y="84" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9.5">• Sin Basic.QoS (Sin límite)</text>
+            <text x="16" y="102" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9.5">• Entrega en ráfaga (2 msgs)</text>
+            <text x="16" y="118" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">• Cero paquetes de vuelta</text>
+          </g>
+
+          <!-- Enlace Cola Telemetría -> Consumidor Telemetría -->
+          <path d="M 632 255 L 730 255" stroke="#34d399" stroke-width="1.8" marker-end="url(#arr-demo-emerald)"/>
+          <text x="682" y="246" fill="#34d399" font-family="JetBrains Mono, monospace" font-size="9" text-anchor="middle">Ráfaga Deliver</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- SLIDE 10: Cierre y Preguntas -->
+    <section class="slide slide-hidden flex-col justify-center items-center w-full h-full text-center py-10" data-slide="10">
+      <div class="space-y-6 max-w-2xl">
+        <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-subtle border border-line text-xs font-mono text-brand">
+          <span>Tecnologías Avanzadas en Redes</span>
+        </div>
+
+        <h2 class="text-5xl md:text-6xl font-bold tracking-tight text-white">
+          Muchas Gracias
+        </h2>
+
+        <p class="text-xl text-slate-400 font-light">
+          ¿Preguntas o comentarios?
+        </p>
+
+        <!-- Expositores en el cierre -->
+        <div class="pt-8 border-t border-line/60">
+          <span class="text-[11px] font-mono tracking-widest uppercase text-slate-500 block mb-3">Equipo expositor</span>
+          <div class="flex flex-wrap justify-center gap-6 text-sm font-sans text-slate-300">
+            <span>Julián Cardoso Landin</span>
+            <span class="text-slate-600">·</span>
+            <span>Uriel Grifman</span>
+            <span class="text-slate-600">·</span>
+            <span>Matías Gabriel Jastrebow</span>
+            <span class="text-slate-600">·</span>
+            <span>Gonzalo Ivo Turri</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- BOTTOM BAR -->
+  <footer class="h-14 px-8 border-t border-line flex items-center justify-between z-20 flex-shrink-0 bg-canvas">
+    <div class="flex items-center space-x-2">
+      <button id="prev-btn" class="px-3 py-1 rounded bg-card hover:bg-subtle text-slate-300 text-xs font-mono border border-line transition disabled:opacity-30 disabled:cursor-not-allowed">
+        ← Anterior
+      </button>
+      <button id="next-btn" class="px-3 py-1 rounded bg-white hover:bg-slate-200 text-black text-xs font-mono font-semibold transition">
+        Siguiente →
+      </button>
+    </div>
+
+    <div class="flex items-center space-x-1.5" id="dots"></div>
+
+    <div class="text-[11px] font-mono text-slate-500 hidden md:block">
+      Atajos: <span class="text-slate-400">← / →</span> · <span class="text-slate-400">F</span> pantalla completa
+    </div>
+  </footer>
+
+  <script>
+    let current = 1;
+    const total = 10;
+
+    const slides = document.querySelectorAll('.slide');
+    const slideIndex = document.getElementById('slide-index');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const dotsContainer = document.getElementById('dots');
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
+
+    // Inicializar Dots
+    for (let i = 1; i <= total; i++) {
+      const dot = document.createElement('button');
+      dot.className = `h-1 rounded transition-all ${i === 1 ? 'w-6 bg-brand' : 'w-2 bg-line hover:bg-slate-500'}`;
+      dot.title = `Slide ${i}`;
+      dot.onclick = () => goTo(i);
+      dotsContainer.appendChild(dot);
+    }
+
+    function render() {
+      slides.forEach(slide => {
+        const id = parseInt(slide.dataset.slide);
+        if (id === current) {
+          slide.classList.remove('slide-hidden');
+          slide.classList.add('slide-active');
+        } else {
+          slide.classList.remove('slide-active');
+          slide.classList.add('slide-hidden');
+        }
+      });
+
+      slideIndex.textContent = current;
+
+      Array.from(dotsContainer.children).forEach((dot, idx) => {
+        if (idx + 1 === current) {
+          dot.className = 'w-6 h-1 rounded bg-brand transition-all';
+        } else {
+          dot.className = 'w-2 h-1 rounded bg-line hover:bg-slate-500 transition-all';
+        }
+      });
+
+      prevBtn.disabled = current === 1;
+      nextBtn.disabled = current === total;
+    }
+
+    function goTo(n) {
+      if (n >= 1 && n <= total) {
+        current = n;
+        render();
+      }
+    }
+
+    function next() {
+      if (current < total) {
+        current++;
+        render();
+      }
+    }
+
+    function prev() {
+      if (current > 1) {
+        current--;
+        render();
+      }
+    }
+
+    prevBtn.onclick = prev;
+    nextBtn.onclick = next;
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        next();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prev();
+      } else if (e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    });
+
+    fullscreenBtn.onclick = () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    };
+
+    window.onload = () => {
+      render();
+      lucide.createIcons();
+    };
+  </script>
+</body>
+</html>
