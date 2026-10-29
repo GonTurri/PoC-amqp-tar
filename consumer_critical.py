@@ -1,5 +1,4 @@
 import json
-import time
 import pika
 
 def callback(ch, method, properties, body):
@@ -7,23 +6,27 @@ def callback(ch, method, properties, body):
     print("\n" + "="*60)
     print(f"[!] ALERTA CRÍTICA RECIBIDA")
     print(f"    - Delivery Tag : {method.delivery_tag}")
-    print(f"    - Redelivered  : {method.redelivered} {'(¡REENTREGA DETECTADA TRAS FALLA!)' if method.redelivered else '(Primera entrega)'}")
+    print(f"    - Redelivered  : {method.redelivered} {'(¡REENTREGA TRAS CAÍDA PREVIA!)' if method.redelivered else '(Primera entrega)'}")
     print(f"    - Routing Key  : {method.routing_key}")
     print(f"    - Exchange     : {method.exchange}")
     print(f"    - Payload      : {evento}")
-    print("[*] Procesando en almacenamiento transaccional (4s antes de emitir Basic.Ack)...")
+    print("="*60)
+    print("[⏸️] Estado en RabbitMQ: UNACKED (1 mensaje retenido en el broker).")
+    print("[*] Acciones disponibles:")
+    print("    -> [ENTER]  : Confirmar procesamiento y enviar Basic.Ack al broker.")
+    print("    -> [CTRL+C] : Simular caída del proceso (RabbitMQ lo devuelve a 'Ready: 1').")
     
-    # Ventana de 4s para evidenciar en Wireshark la diferencia temporal entre Basic.Deliver y Basic.Ack
-    time.sleep(4)
+    input("\nPresioná [ENTER] para emitir Basic.Ack o [CTRL+C] para forzar caída... ")
     
     # Confirmación explícita de procesamiento a nivel de capa de aplicación
     ch.basic_ack(delivery_tag=method.delivery_tag)
-    print(f"[✓] Procesamiento confirmado. Trama Basic.Ack(tag={method.delivery_tag}) enviada al broker.")
+    print(f"\n[✓] Procesamiento confirmado. Trama Basic.Ack(tag={method.delivery_tag}) enviada al broker.")
     print("="*60)
 
 def main():
+    # heartbeat=600 (10 minutos) para permitir pausar y explicar en la UI sin timeout de latidos
     connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host='127.0.0.1', port=5672, virtual_host='/')
+        pika.ConnectionParameters(host='127.0.0.1', port=5672, virtual_host='/', heartbeat=600)
     )
     channel = connection.channel()
 

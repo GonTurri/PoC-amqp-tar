@@ -25,7 +25,7 @@ Prueba de concepto (PoC) reproducible de **AMQP 0-9-1** implementada con **Pytho
                          | Basic.Deliver (ráfaga)            | Basic.Deliver (QoS prefetch=1)
                          v (no-ack: True)                    v (no-ack: False)
                 [ CONSUMER TELEMETRÍA ]             [ CONSUMER CRÍTICO ]
-                - Sin Basic.Ack (Alto throughput)   - Espera 4s + Basic.Ack explícito
+                - Sin Basic.Ack (Alto throughput)   - Pausa manual + Basic.Ack explícito
 ```
 
 ---
@@ -72,15 +72,17 @@ Prueba de concepto (PoC) reproducible de **AMQP 0-9-1** implementada con **Pytho
    ```bash
    python consumer_critical.py
    ```
-   * Recibe la alarma crítica: `Redelivered: False`.
-   * Durante la espera de 4 segundos, presionar **`Ctrl + C`** para simular la caída del nodo.
-   * Mostrar en consola que se interrumpió antes de emitir `Basic.Ack`. En RabbitMQ la alarma regresa de inmediato a **`Ready: 1`** (cero pérdida de datos).
+   * Recibe la alarma crítica y se **pausa en espera interactiva**.
+   * En el Navegador (RabbitMQ UI), mostrá la columna: **`Unacked: 1`**.
+     > *"El broker entregó el mensaje vía `Basic.Deliver`, pero la cola retiene la copia porque todavía no recibió confirmación."*
+   * En la Terminal, presioná **`Ctrl + C`** para simular la caída del nodo sin emitir Ack.
+   * En RabbitMQ UI, mostrá que la alarma regresó automáticamente a **`Ready: 1`** (cero pérdida de datos tras la caída del socket).
    * **Relanzar el consumidor**:
      ```bash
      python consumer_critical.py
      ```
-   * Ahora muestra en vivo: **`Redelivered: True (¡REENTREGA DETECTADA TRAS FALLA!)`**.
-   * Dejar correr los 4 segundos: se emite `Basic.Ack(tag=1)`. Presionar `Ctrl+C` para salir.
+   * Ahora muestra en vivo: **`Redelivered: True (¡REENTREGA TRAS CAÍDA PREVIA!)`**.
+   * Presioná **`Enter`**: se emite la trama `Basic.Ack(tag=1)` y la cola pasa a 0. Salí con `Ctrl + C`.
 
 2. **Consumidor de Telemetría (`auto_ack=True`)**:
    ```bash
@@ -119,9 +121,9 @@ Tocá el cuadrado rojo (**Stop**) en Wireshark. En una sola captura tenés todo 
   * *"Primero envía `Basic.Qos` con `Prefetch-Count: 1` para que el broker no le mande más de un mensaje a la vez."*
   * *"En `Basic.Consume` vemos el flag **`no-ack: False`**, avisándole al broker que requiere confirmación manual."*
 
-### 5. Consumidor Crítico: `Basic.Deliver` y los 4 segundos hasta el `Basic.Ack`
+### 5. Consumidor Crítico: `Basic.Deliver` y el lapso hasta el `Basic.Ack` manual
 * Señalá el paquete `Basic.Deliver` y el paquete `Basic.Ack` justo debajo:
-* **Qué decir**: *"El broker entrega la alarma con `Basic.Deliver`. Si miramos la columna **Time**, recién **4 segundos después** aparece la trama **`Basic.Ack` (`Delivery-Tag: 1`)** enviada por el consumidor. Durante esos 4 segundos el mensaje estuvo retenido como `Unacked` en el broker: si el consumidor se caía antes de mandar este `Basic.Ack`, RabbitMQ detecta el cierre del socket TCP y vuelve a encolar la alarma sin perder datos."*
+* **Qué decir**: *"El broker entrega la alarma con `Basic.Deliver`. Si miramos la columna **Time**, recién cuando el operador da Enter aparece la trama **`Basic.Ack` (`Delivery-Tag: 1`)** enviada por el consumidor. Durante ese lapso el mensaje estuvo retenido como `Unacked` en el broker: al interrumpir el consumidor sin Ack en el primer intento, RabbitMQ detectó el cierre del socket TCP y reencoló la alarma automáticamente sin perder datos."*
 
 ### 6. Consumidor de Telemetría: Modo Ráfaga (`no-ack: True` y sin `Basic.Ack`)
 * Bajá hasta los últimos paquetes (el segundo consumidor):
