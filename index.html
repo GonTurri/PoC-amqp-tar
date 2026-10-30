@@ -89,10 +89,10 @@
         <!-- Definición SCADA y contexto -->
         <div class="space-y-1">
           <div class="text-xs font-mono tracking-wider text-slate-400">
-            <span class="text-white font-semibold">SCADA:</span> Supervisory Control and Data Acquisition
+            <span class="text-white font-semibold">SCADA:</span> Supervisory Control and Data Acquisition · supervisión y control remoto de una planta
           </div>
           <p class="text-xs md:text-sm text-slate-400">
-            Transición desde el sondeo cíclico y acoplamiento maestro-esclavo hacia arquitecturas reactivas orientadas a eventos.
+            Transición desde el sondeo cíclico maestro-esclavo (Modbus, X.25) hacia arquitecturas orientadas a eventos. AMQP actúa de la planta hacia arriba (MES, historiadores, cloud); en campo domina MQTT (ver slide 8).
           </p>
         </div>
 
@@ -512,7 +512,7 @@
           <ul class="text-xs text-slate-300 space-y-2">
             <li>• <strong>Persistencia:</strong> Colas durables + mensajes en disco (<code>delivery_mode=2</code>).</li>
             <li>• <strong>Basic.Ack explícito:</strong> El mensaje se borra del búfer solo al confirmarse su procesamiento.</li>
-            <li>• <strong>Reentrega automática:</strong> Si el canal cae sin ACK, el mensaje se redirige a otro receptor.</li>
+            <li>• <strong>Reentrega automática:</strong> Si el canal cae sin ACK, el mensaje se reencola y se reentrega (<code>Redelivered=true</code>).</li>
           </ul>
         </div>
       </div>
